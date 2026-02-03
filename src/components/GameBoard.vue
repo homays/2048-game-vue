@@ -1,33 +1,40 @@
 <template>
   <div 
     class="game-board" 
+    :style="boardStyle"
     @keydown="handleKeydown"
     @touchstart="handleTouchStart"
     @touchend="handleTouchEnd"
     tabindex="0"
   >
-    <div class="grid-container">
+    <div class="grid-container" :style="gridStyle">
       <div 
         v-for="(row, y) in gameState.board" 
         :key="y"
         class="grid-row"
+        :style="rowStyle"
       >
         <div 
           v-for="(value, x) in row" 
           :key="`${x}-${y}`"
           class="grid-cell"
+          :style="cellStyle"
         ></div>
       </div>
     </div>
-    <div class="tiles-container">
+    <div class="tiles-container" :style="tilesContainerStyle">
       <template v-for="(row, y) in gameState.board" :key="y">
         <template v-for="(value, x) in row" :key="`${x}-${y}`">
           <Tile
             v-if="value !== 0"
-            :key="`${x}-${y}-${value}`"
+            :key="`${x}-${y}-${value}-${animationKey}`"
             :value="value"
             :x="x"
             :y="y"
+            :size="boardConfig.size"
+            :cell-size="cellSize"
+            :gap="gap"
+            :theme="theme"
             :merged="false"
           />
         </template>
@@ -37,22 +44,75 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import type { GameState } from '../types/game';
+import { ref, computed, watch } from 'vue';
+import type { GameState, Theme } from '../types/game';
 import Tile from './Tile.vue';
 
 interface Props {
   gameState: GameState;
-  boardSize: number;
+  containerSize: number;
+  theme: Theme;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  move: [direction: 'up' | 'down' | 'left' | 'right']
+  move: [direction: 'up' | 'down' | 'left' | 'right'];
 }>();
 
 const touchStart = ref<{ x: number; y: number } | null>(null);
+const animationKey = ref(0);
+
+const boardConfig = computed(() => ({
+  size: props.gameState.config.size
+}));
+
+const gap = computed(() => Math.max(8, props.containerSize / 40));
+const cellSize = computed(() => {
+  const totalGap = gap.value * (boardConfig.value.size + 1);
+  return (props.containerSize - totalGap) / boardConfig.value.size;
+});
+
+const boardStyle = computed(() => ({
+  width: `${props.containerSize}px`,
+  height: `${props.containerSize}px`,
+  background: props.theme.colors.board,
+  padding: `${gap.value}px`,
+  borderRadius: '8px'
+}));
+
+const gridStyle = computed(() => ({
+  display: 'grid',
+  gridTemplateColumns: `repeat(${boardConfig.value.size}, 1fr)`,
+  gridTemplateRows: `repeat(${boardConfig.value.size}, 1fr)`,
+  gap: `${gap.value}px`,
+  width: '100%',
+  height: '100%'
+}));
+
+const rowStyle = computed(() => ({
+  display: 'contents'
+}));
+
+const cellStyle = computed(() => ({
+  background: props.theme.colors.cell,
+  borderRadius: '6px',
+  width: `${cellSize.value}px`,
+  height: `${cellSize.value}px`
+}));
+
+const tilesContainerStyle = computed(() => ({
+  position: 'absolute',
+  top: `${gap.value}px`,
+  left: `${gap.value}px`,
+  width: `${props.containerSize - gap.value * 2}px`,
+  height: `${props.containerSize - gap.value * 2}px`,
+  pointerEvents: 'none'
+}));
+
+watch(() => props.gameState.board, () => {
+  animationKey.value++;
+}, { deep: true });
 
 function handleKeydown(event: KeyboardEvent): void {
   const keyMap: Record<string, 'up' | 'down' | 'left' | 'right'> = {
@@ -63,7 +123,11 @@ function handleKeydown(event: KeyboardEvent): void {
     'w': 'up',
     's': 'down',
     'a': 'left',
-    'd': 'right'
+    'd': 'right',
+    'W': 'up',
+    'S': 'down',
+    'A': 'left',
+    'D': 'right'
   };
   
   const direction = keyMap[event.key];
@@ -106,21 +170,14 @@ function handleTouchEnd(event: TouchEvent): void {
 <style scoped>
 .game-board {
   position: relative;
-  width: v-bind('boardSize + "px"');
-  height: v-bind('boardSize + "px"');
-  background: #bbada0;
-  border-radius: 6px;
-  padding: v-bind('boardSize / 30 + "px"');
   outline: none;
+  touch-action: none;
+  user-select: none;
 }
 
 .grid-container {
   width: 100%;
   height: 100%;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: v-bind('boardSize / 30 + "px"');
 }
 
 .grid-row {
@@ -128,42 +185,17 @@ function handleTouchEnd(event: TouchEvent): void {
 }
 
 .grid-cell {
-  background: rgba(238, 228, 218, 0.35);
   border-radius: 6px;
 }
 
 .tiles-container {
   position: absolute;
-  top: v-bind('boardSize / 30 + "px"');
-  left: v-bind('boardSize / 30 + "px"');
-  width: calc(100% - v-bind('boardSize / 15 + "px"'));
-  height: calc(100% - v-bind('boardSize / 15 + "px"'));
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: v-bind('boardSize / 30 + "px"');
-  pointer-events: none;
 }
 
 @media (max-width: 600px) {
   .game-board {
-    width: 90vw;
-    height: 90vw;
-    max-width: 400px;
-    max-height: 400px;
-    padding: 10px;
-  }
-  
-  .tiles-container {
-    top: 10px;
-    left: 10px;
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
-    gap: 10px;
-  }
-  
-  .grid-container {
-    gap: 10px;
+    max-width: 95vw;
+    max-height: 95vw;
   }
 }
 </style>

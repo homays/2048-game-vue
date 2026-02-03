@@ -1,15 +1,16 @@
-import type { Board } from '../types/game';
+import type { Board, BoardSize } from '../types/game';
 
-export const BOARD_SIZE = 4;
+export const DEFAULT_BOARD_SIZE: BoardSize = 4;
 
-export function createEmptyBoard(): Board {
-  return Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
+export function createEmptyBoard(size: BoardSize = DEFAULT_BOARD_SIZE): Board {
+  return Array(size).fill(null).map(() => Array(size).fill(0));
 }
 
 export function getEmptyCells(board: Board): { x: number; y: number }[] {
   const cells: { x: number; y: number }[] = [];
-  for (let y = 0; y < BOARD_SIZE; y++) {
-    for (let x = 0; x < BOARD_SIZE; x++) {
+  const size = board.length;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
       if (board[y][x] === 0) {
         cells.push({ x, y });
       }
@@ -35,13 +36,14 @@ export function isBoardFull(board: Board): boolean {
 }
 
 export function canMerge(board: Board): boolean {
-  for (let y = 0; y < BOARD_SIZE; y++) {
-    for (let x = 0; x < BOARD_SIZE; x++) {
+  const size = board.length;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
       const value = board[y][x];
       if (value === 0) return true;
       
-      if (x < BOARD_SIZE - 1 && board[y][x + 1] === value) return true;
-      if (y < BOARD_SIZE - 1 && board[y + 1][x] === value) return true;
+      if (x < size - 1 && board[y][x + 1] === value) return true;
+      if (y < size - 1 && board[y + 1][x] === value) return true;
     }
   }
   return false;
@@ -49,4 +51,31 @@ export function canMerge(board: Board): boolean {
 
 export function isGameOver(board: Board): boolean {
   return isBoardFull(board) && !canMerge(board);
+}
+
+export function getMaxTile(board: Board): number {
+  let max = 0;
+  const size = board.length;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (board[y][x] > max) {
+        max = board[y][x];
+      }
+    }
+  }
+  return max;
+}
+
+export function getTargetScore(size: BoardSize): number {
+  const targets: Record<BoardSize, number> = {
+    3: 512,
+    4: 2048,
+    5: 4096,
+    6: 8192
+  };
+  return targets[size];
+}
+
+export function getInitialTiles(size: BoardSize): number {
+  return size <= 4 ? 2 : 3;
 }

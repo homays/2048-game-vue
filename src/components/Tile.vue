@@ -1,53 +1,75 @@
 <template>
   <div 
-    :class="['tile', `tile-${value}`, { 'merged': merged }]" 
+    :class="['tile', { 'merged': merged, 'new': isNew }]" 
     :style="tileStyle"
   >
-    <span class="tile-value">{{ value }}</span>
+    <span class="tile-value" :style="valueStyle">{{ value }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
+import type { Theme } from '../types/game';
+import { getTileColor } from '../utils/theme';
 
 interface Props {
   value: number;
   x: number;
   y: number;
+  size: number;
+  cellSize: number;
+  gap: number;
+  theme: Theme;
   merged: boolean;
 }
 
 const props = defineProps<Props>();
 
+const isNew = ref(true);
+
+onMounted(() => {
+  setTimeout(() => {
+    isNew.value = false;
+  }, 200);
+});
+
+const tileColor = computed(() => getTileColor(props.theme, props.value));
+
+const fontSize = computed(() => {
+  const digits = props.value.toString().length;
+  if (digits <= 2) return props.cellSize * 0.5;
+  if (digits === 3) return props.cellSize * 0.4;
+  return props.cellSize * 0.32;
+});
+
 const tileStyle = computed(() => ({
-  gridColumn: props.x + 1,
-  gridRow: props.y + 1
+  position: 'absolute',
+  left: `${props.x * (props.cellSize + props.gap)}px`,
+  top: `${props.y * (props.cellSize + props.gap)}px`,
+  width: `${props.cellSize}px`,
+  height: `${props.cellSize}px`,
+  background: tileColor.value.background,
+  color: tileColor.value.text,
+  borderRadius: '6px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontWeight: 'bold',
+  transition: 'all 150ms ease-in-out',
+  zIndex: 10,
+  animation: isNew.value ? 'appear 200ms ease-in-out' : undefined
+}));
+
+const valueStyle = computed(() => ({
+  fontSize: `${fontSize.value}px`,
+  zIndex: 1
 }));
 </script>
 
 <style scoped>
 .tile {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 32px;
-  font-weight: bold;
-  border-radius: 6px;
-  transition: transform 100ms ease-in-out;
-  z-index: 10;
+  will-change: transform, left, top;
 }
-
-.tile-2 { background: #eee4da; color: #776e65; }
-.tile-4 { background: #ede0c8; color: #776e65; }
-.tile-8 { background: #f2b179; color: #f9f6f2; }
-.tile-16 { background: #f59563; color: #f9f6f2; }
-.tile-32 { background: #f67c5f; color: #f9f6f2; }
-.tile-64 { background: #f65e3b; color: #f9f6f2; }
-.tile-128 { background: #edcf72; color: #f9f6f2; font-size: 28px; }
-.tile-256 { background: #edcc61; color: #f9f6f2; font-size: 28px; }
-.tile-512 { background: #edc850; color: #f9f6f2; font-size: 28px; }
-.tile-1024 { background: #edc53f; color: #f9f6f2; font-size: 24px; }
-.tile-2048 { background: #edc22e; color: #f9f6f2; font-size: 24px; }
 
 .merged {
   animation: pop 200ms ease-in-out;
@@ -55,11 +77,26 @@ const tileStyle = computed(() => ({
 
 @keyframes pop {
   0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  50% { transform: scale(1.15); }
   100% { transform: scale(1); }
 }
 
+@keyframes appear {
+  0% { 
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .tile-value {
-  z-index: 1;
+  user-select: none;
 }
 </style>

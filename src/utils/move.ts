@@ -24,11 +24,12 @@ export function moveRow(row: number[]): { newRow: number[]; moved: boolean; scor
     }
   }
   
-  while (newRow.length < 4) {
+  const rowLength = row.length;
+  while (newRow.length < rowLength) {
     newRow.push(0);
   }
   
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < rowLength; i++) {
     if (row[i] !== newRow[i]) {
       moved = true;
     }
@@ -64,17 +65,18 @@ export function moveRight(board: Board): MoveResult {
 }
 
 export function moveUp(board: Board): MoveResult {
+  const size = board.length;
   let moved = false;
   let scoreGained = 0;
-  const newBoard: Board = Array(4).fill(null).map(() => Array(4).fill(0));
+  const newBoard: Board = Array(size).fill(null).map(() => Array(size).fill(0));
   
-  for (let x = 0; x < 4; x++) {
+  for (let x = 0; x < size; x++) {
     const column = board.map(row => row[x]);
     const result = moveRow(column);
     if (result.moved) moved = true;
     scoreGained += result.score;
     
-    for (let y = 0; y < 4; y++) {
+    for (let y = 0; y < size; y++) {
       newBoard[y][x] = result.newRow[y];
     }
   }
@@ -83,18 +85,19 @@ export function moveUp(board: Board): MoveResult {
 }
 
 export function moveDown(board: Board): MoveResult {
+  const size = board.length;
   let moved = false;
   let scoreGained = 0;
-  const newBoard: Board = Array(4).fill(null).map(() => Array(4).fill(0));
+  const newBoard: Board = Array(size).fill(null).map(() => Array(size).fill(0));
   
-  for (let x = 0; x < 4; x++) {
+  for (let x = 0; x < size; x++) {
     const column = board.map(row => row[x]).reverse();
     const result = moveRow(column);
     if (result.moved) moved = true;
     scoreGained += result.score;
     const reversed = result.newRow.reverse();
     
-    for (let y = 0; y < 4; y++) {
+    for (let y = 0; y < size; y++) {
       newBoard[y][x] = reversed[y];
     }
   }
